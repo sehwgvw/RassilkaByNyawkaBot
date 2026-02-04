@@ -54,7 +54,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 CONFIG = {
     "API_ID": 26563600,
     "API_HASH": '6f2a89308be7e5f8f8702b7811232840',
-    "BOT_TOKEN": '8400853698:AAFyGyQeyUUBrCJXkmj3uEbfXx8TSHeFl6M',
+    "BOT_TOKEN": '8237840393:AAGbgsJzILaIuEFrCduakki_ar3NRgWK4lw',
     "ADMIN_IDS": [7544069555],
     
     # Экономика и настройки
@@ -2264,3 +2264,4 @@ if __name__ == "__main__":
         print("\n👋 Бот остановлен.")
     except Exception as e:
         logger.error(f"Fatal error: {e}\n{traceback.format_exc()}")
+
