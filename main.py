@@ -2264,4 +2264,3 @@ if __name__ == "__main__":
         print("\n👋 Бот остановлен.")
     except Exception as e:
         logger.error(f"Fatal error: {e}\n{traceback.format_exc()}")
-[file content end]
