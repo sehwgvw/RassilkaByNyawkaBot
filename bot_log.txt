@@ -1,0 +1,26 @@
+2026-02-04 17:14:14,918 - MarketingBot - INFO - База данных успешно инициализирована
+2026-02-04 17:14:16,059 - aiogram.dispatcher - INFO - Start polling
+2026-02-04 17:14:16,137 - aiogram.dispatcher - INFO - Run polling for bot @ghfjdksdjfhgfjkdlskdjfhbot id=8342656572 - 'фывапрол'
+2026-02-04 17:17:20,959 - MarketingBot - ERROR - Ошибка при отправке баннера: Can't instantiate abstract class InputFile with abstract method read
+2026-02-04 17:17:23,163 - aiogram.event - INFO - Update id=786598193 is handled. Duration 2452 ms by bot id=8342656572
+2026-02-04 17:17:27,476 - aiogram.event - INFO - Update id=786598194 is handled. Duration 156 ms by bot id=8342656572
+2026-02-04 17:17:36,112 - aiogram.event - INFO - Update id=786598195 is handled. Duration 202 ms by bot id=8342656572
+2026-02-04 17:17:44,228 - aiogram.event - INFO - Update id=786598196 is handled. Duration 219 ms by bot id=8342656572
+2026-02-04 17:17:45,431 - aiogram.event - INFO - Update id=786598197 is handled. Duration 125 ms by bot id=8342656572
+2026-02-04 17:18:07,169 - aiogram.event - INFO - Update id=786598198 is handled. Duration 344 ms by bot id=8342656572
+2026-02-04 17:18:09,662 - aiogram.event - INFO - Update id=786598199 is handled. Duration 327 ms by bot id=8342656572
+2026-02-04 17:18:10,513 - aiogram.event - INFO - Update id=786598200 is handled. Duration 125 ms by bot id=8342656572
+2026-02-04 17:18:13,808 - aiogram.event - INFO - Update id=786598201 is handled. Duration 312 ms by bot id=8342656572
+2026-02-04 17:18:15,951 - aiogram.event - INFO - Update id=786598202 is handled. Duration 202 ms by bot id=8342656572
+2026-02-04 17:18:18,708 - aiogram.event - INFO - Update id=786598203 is handled. Duration 531 ms by bot id=8342656572
+2026-02-04 22:45:22,474 - MarketingBot - INFO - База данных успешно инициализирована
+2026-02-04 22:45:23,286 - aiogram.dispatcher - INFO - Start polling
+2026-02-04 22:45:23,364 - aiogram.dispatcher - INFO - Run polling for bot @ghfjdksdjfhgfjkdlskdjfhbot id=8342656572 - 'фывапрол'
+2026-02-04 22:45:31,769 - MarketingBot - ERROR - Ошибка при отправке баннера: Can't instantiate abstract class InputFile with abstract method read
+2026-02-04 22:45:33,561 - aiogram.event - INFO - Update id=786598205 is handled. Duration 2015 ms by bot id=8342656572
+2026-02-04 22:45:45,254 - aiogram.event - INFO - Update id=786598206 is handled. Duration 733 ms by bot id=8342656572
+2026-02-04 22:45:47,505 - aiogram.event - INFO - Update id=786598207 is handled. Duration 217 ms by bot id=8342656572
+2026-02-04 22:45:54,019 - aiogram.event - INFO - Update id=786598208 is handled. Duration 891 ms by bot id=8342656572
+2026-02-04 22:45:56,424 - aiogram.event - INFO - Update id=786598209 is handled. Duration 593 ms by bot id=8342656572
+2026-02-04 22:50:49,390 - aiogram.dispatcher - INFO - Polling stopped
+2026-02-04 22:50:49,390 - aiogram.dispatcher - INFO - Polling stopped for bot @ghfjdksdjfhgfjkdlskdjfhbot id=8342656572 - 'фывапрол'
