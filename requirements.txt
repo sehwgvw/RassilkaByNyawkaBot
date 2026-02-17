@@ -1,5 +1,5 @@
 aiogram==3.17.0
-telethon==1.28.5
+telethon==1.42.0
 sqlalchemy==2.0.39
 aiosqlite==0.20.0
 aiofiles==24.1.0
@@ -7,3 +7,4 @@ python-dotenv==1.0.1
 pydantic==2.10.4
 pydantic-settings==2.6.0
 pydantic-extra-types==2.10.1
+
