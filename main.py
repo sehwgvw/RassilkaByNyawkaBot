@@ -21,27 +21,28 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
     ReplyKeyboardMarkup, KeyboardButton, 
     InlineKeyboardMarkup, InlineKeyboardButton,
-    FSInputFile, CallbackQuery, InputFile
+    FSInputFile, CallbackQuery
 )
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from telethon import TelegramClient, functions, errors, utils
 from telethon.tl.types import InputPeerChannel, InputPeerUser, Dialog, Chat, Channel
 from telethon.tl.functions import messages, channels
-# Импорт модуля для работы с папками
+
+# ИСПРАВЛЕННЫЕ ИМПОРТЫ для работы с папками
 try:
     from telethon.tl.functions.chatlists import (
-        GetExportedChatlistFilters, 
-        DeleteExportedChatlist, 
-        CheckChatlistInvite, 
-        JoinChatlistInvite
+        GetExportedChatlistFiltersRequest, 
+        DeleteExportedChatlistRequest, 
+        CheckChatlistInviteRequest, 
+        JoinChatlistInviteRequest
     )
     from telethon.tl.types.chatlists import ChatlistInviteAlready
     CHATLISTS_AVAILABLE = True
-except ImportError:
+    print("✅ Библиотека поддерживает папки (chatlists)")
+except ImportError as e:
     CHATLISTS_AVAILABLE = False
-    logger = logging.getLogger("MarketingBot")
-    logger.warning("Библиотека не поддерживает папки (chatlists). Функционал будет ограничен.")
+    logging.warning(f"Библиотека не поддерживает папки: {e}. Функционал будет ограничен.")
 
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, 
@@ -50,7 +51,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 
-# --- КОНФИГУРАЦИЯ (Вставлены ваши данные) ---
+# --- КОНФИГУРАЦИЯ ---
 CONFIG = {
     "API_ID": 26563600,
     "API_HASH": '6f2a89308be7e5f8f8702b7811232840',
@@ -58,19 +59,19 @@ CONFIG = {
     "ADMIN_IDS": [7544069555],
     
     # Экономика и настройки
-    "BROADCAST_COST": 100.0,  # Увеличено до 100 рублей
+    "BROADCAST_COST": 100.0,
     "REWARD_PUBLIC": 5.0,
     "REWARD_ADDLIST": 10.0,
     "MAX_ACCOUNTS": 10,
     "MAX_CHATS": 1000,
-    "DELAY_BETWEEN_MSGS": 5, # сек
+    "DELAY_BETWEEN_MSGS": 5,
     
     # Футер для сообщений
     "FOOTER_TEXT": "\n\n—\nОтправлено через t.me/UwUMarketingBot",
     
     # Пути
     "SESSIONS_DIR": "sessions",
-    "DB_NAME": "marketing_bot_v1.1.db",  # Новая БД
+    "DB_NAME": "marketing_bot_v1.1.db",
     "BANNER_PATH": "banner.png"
 }
 
@@ -89,12 +90,7 @@ logger = logging.getLogger("MarketingBot")
 if not os.path.exists(CONFIG["SESSIONS_DIR"]):
     os.makedirs(CONFIG["SESSIONS_DIR"])
 
-# Удаляем старую БД если она существует
-if os.path.exists("marketing_bot.db"):
-    logger.info("Удаляю старую базу данных...")
-    os.remove("marketing_bot.db")
-
-# --- БАЗА ДАННЫХ (SQLAlchemy) ---
+# --- БАЗА ДАННЫХ ---
 Base = declarative_base()
 
 class User(Base):
@@ -125,12 +121,12 @@ class Chat(Base):
     user_id = Column(BigInteger, ForeignKey('users.user_id'))
     session_id = Column(Integer, ForeignKey('sessions.id'), nullable=True)
     link = Column(String, nullable=False)
-    chat_type = Column(String, default="public") # public, private, addlist, from_folder
+    chat_type = Column(String, default="public")
     chat_tg_id = Column(BigInteger, nullable=True)
     title = Column(String, nullable=True)
-    username = Column(String, nullable=True) # Для быстрого доступа
-    is_active = Column(Boolean, default=True) # Удалось ли войти
-    from_folder = Column(String, nullable=True) # Из какой папки был добавлен
+    username = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    from_folder = Column(String, nullable=True)
     added_at = Column(DateTime, default=datetime.utcnow)
 
 class Broadcast(Base):
@@ -138,7 +134,7 @@ class Broadcast(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, ForeignKey('users.user_id'))
     message_text = Column(String, nullable=False)
-    status = Column(String, default="pending") # pending, processing, completed, failed
+    status = Column(String, default="pending")
     total_chats = Column(Integer, default=0)
     success_count = Column(Integer, default=0)
     fail_count = Column(Integer, default=0)
@@ -151,7 +147,7 @@ class Transaction(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(BigInteger, ForeignKey('users.user_id'))
     amount = Column(Float, nullable=False)
-    type = Column(String, nullable=False) # reward, broadcast, deposit, withdrawal
+    type = Column(String, nullable=False)
     description = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -161,7 +157,7 @@ class PromoCode(Base):
     code = Column(String, unique=True, nullable=False)
     amount = Column(Float, default=0.0)
     is_active = Column(Boolean, default=True)
-    created_by = Column(BigInteger, nullable=True) # ID администратора
+    created_by = Column(BigInteger, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     activated_by = Column(BigInteger, nullable=True)
     activated_at = Column(DateTime, nullable=True)
@@ -178,7 +174,7 @@ async def init_db():
 # --- УТИЛИТЫ ---
 
 def get_welcome_message(is_new_user: bool = False) -> str:
-    """Генерирует приветственное сообщение с баннером"""
+    """Генерирует приветственное сообщение"""
     if is_new_user:
         return (
             "🎉 **ДОБРО ПОЖАЛОВАТЬ В UwU Marketing Bot v1.1!** 🎉\n\n"
@@ -189,8 +185,8 @@ def get_welcome_message(is_new_user: bool = False) -> str:
             "✅ Массовые рассылки по всем чатам\n"
             "✅ Награды за добавление контента\n"
             "✅ Полная автоматизация процессов\n\n"
-            "💰 **СТОИМОСТЬ РАССЫЛКИ:** 100 RUB\n"
-            "🎁 **НАГРАДЫ:** 5-10 RUB за каждый добавленный чат\n\n"
+            f"💰 **СТОИМОСТЬ РАССЫЛКИ:** {CONFIG['BROADCAST_COST']} RUB\n"
+            f"🎁 **НАГРАДЫ:** {CONFIG['REWARD_PUBLIC']}-{CONFIG['REWARD_ADDLIST']} RUB за каждый добавленный чат\n\n"
             "📊 **НАЧНИТЕ ЗАРАБАТЫВАТЬ УЖЕ СЕЙЧАС!**"
         )
     else:
@@ -227,7 +223,7 @@ class TelethonManager:
                 "id": me.id
             }
             
-            # Обновление профиля по ТЗ
+            # Обновление профиля
             try:
                 await client(functions.account.UpdateProfileRequest(
                     first_name="Рассылка от няшки",
@@ -258,12 +254,10 @@ class TelethonManager:
                 await client.disconnect()
                 return all_chats
 
-            # Получаем все диалоги
             dialogs = await client.get_dialogs(limit=200)
             
             for dialog in dialogs:
                 try:
-                    # Пропускаем личные чаты с пользователями
                     if isinstance(dialog.entity, Channel):
                         chat_info = {
                             'id': dialog.entity.id,
@@ -274,7 +268,6 @@ class TelethonManager:
                             'access_hash': dialog.entity.access_hash if hasattr(dialog.entity, 'access_hash') else None
                         }
                         
-                        # Генерируем ссылку
                         if chat_info['username']:
                             link = f"https://t.me/{chat_info['username']}"
                         else:
@@ -301,9 +294,6 @@ class TelethonManager:
     async def process_addlist(session_path: str, addlist_link: str, extract_chats: bool = True) -> dict:
         """
         Обрабатывает добавление папки (addlist)
-        1. Удаляет старые папки (если есть)
-        2. Добавляет новую папку
-        3. Извлекает чаты из папки (если extract_chats=True)
         """
         client = None
         result = {
@@ -348,7 +338,6 @@ class TelethonManager:
             
             # 2. Добавляем новую папку
             try:
-                # Проверяем инвайт
                 check_res = await client(CheckChatlistInviteRequest(slug=slug))
                 
                 if isinstance(check_res, ChatlistInviteAlready):
@@ -417,9 +406,7 @@ class TelethonManager:
 
     @staticmethod
     async def broadcast_to_all_chats(session_path: str, text: str) -> dict:
-        """
-        Рассылает сообщение по ВСЕМ чатам на аккаунте
-        """
+        """Рассылает сообщение по ВСЕМ чатам на аккаунте"""
         client = None
         stats = {
             "total": 0,
@@ -436,14 +423,12 @@ class TelethonManager:
                 stats["errors"].append("Не авторизован")
                 return stats
             
-            # Получаем все диалоги
             dialogs = await client.get_dialogs(limit=None)
             stats["total"] = len(dialogs)
             
             footer = CONFIG.get("FOOTER_TEXT", "\n\n—\nОтправлено через Marketing Bot")
             full_text = text + footer
             
-            # Фильтруем только каналы и группы
             broadcast_dialogs = []
             for dialog in dialogs:
                 if isinstance(dialog.entity, Channel):
@@ -451,7 +436,6 @@ class TelethonManager:
             
             logger.info(f"Найдено {len(broadcast_dialogs)} каналов/групп для рассылки")
             
-            # Отправляем сообщения
             for i, dialog in enumerate(broadcast_dialogs):
                 try:
                     await client.send_message(
@@ -462,7 +446,6 @@ class TelethonManager:
                     stats["success"] += 1
                     logger.info(f"Отправлено в {dialog.entity.title} ({i+1}/{len(broadcast_dialogs)})")
                     
-                    # Случайная задержка
                     delay = random.uniform(CONFIG["DELAY_BETWEEN_MSGS"], CONFIG["DELAY_BETWEEN_MSGS"] + 3)
                     await asyncio.sleep(delay)
                     
@@ -497,7 +480,7 @@ class TelethonManager:
 
     @staticmethod
     async def join_single_chat(session_path: str, link: str) -> dict:
-        """Вход в одиночный чат (публичный или приватный)"""
+        """Вход в одиночный чат"""
         client = None
         result = {"success": False, "error": "", "chat_info": {}}
         
@@ -510,7 +493,6 @@ class TelethonManager:
                 return result
             
             try:
-                # PRIVATE / JOINCHAT / PLUS LINKS
                 if '+' in link or 'joinchat' in link:
                     if '+' in link:
                         hash_arg = link.split('+')[-1].strip()
@@ -520,7 +502,6 @@ class TelethonManager:
                     await client(functions.messages.ImportChatInviteRequest(hash_arg))
                     result["success"] = True
                     
-                # PUBLIC USERNAME
                 else:
                     clean_link = link.replace('https://', '').replace('http://', '').replace('t.me/', '').replace('telegram.me/', '').replace('@', '')
                     
@@ -534,7 +515,6 @@ class TelethonManager:
                     await client(functions.channels.JoinChannelRequest(username))
                     result["success"] = True
                 
-                # Если успешно, получаем информацию о чате
                 if result["success"]:
                     try:
                         if '+' in link or 'joinchat' in link:
@@ -697,9 +677,7 @@ async def send_welcome_with_banner(chat_id: int, is_new_user: bool = False):
     welcome_text = get_welcome_message(is_new_user)
     
     try:
-        # Пытаемся отправить баннер если он существует
         if os.path.exists(CONFIG["BANNER_PATH"]):
-            # Используем правильный класс InputFile
             photo = types.FSInputFile(CONFIG["BANNER_PATH"])
             await bot.send_photo(
                 chat_id=chat_id,
@@ -708,7 +686,6 @@ async def send_welcome_with_banner(chat_id: int, is_new_user: bool = False):
                 parse_mode="Markdown"
             )
         else:
-            # Если баннера нет, отправляем просто текст
             await bot.send_message(
                 chat_id=chat_id,
                 text=welcome_text,
@@ -716,7 +693,6 @@ async def send_welcome_with_banner(chat_id: int, is_new_user: bool = False):
             )
     except Exception as e:
         logger.error(f"Ошибка при отправке баннера: {e}")
-        # Если ошибка, отправляем просто текст
         await bot.send_message(
             chat_id=chat_id,
             text=welcome_text,
@@ -744,10 +720,8 @@ async def cmd_start(message: types.Message):
             await session.commit()
             is_new_user = True
         
-        # Отправляем приветствие с баннером
         await send_welcome_with_banner(message.chat.id, is_new_user)
         
-        # Ждем секунду перед отправкой клавиатуры
         await asyncio.sleep(1)
         
         await message.answer(
@@ -780,7 +754,6 @@ async def show_wallet(message: types.Message):
     async with async_session() as session:
         user = (await session.execute(select(User).where(User.user_id == message.from_user.id))).scalar_one()
         
-        # Получаем последние 5 транзакций
         trans = (await session.execute(
             select(Transaction).where(Transaction.user_id == user.user_id)
             .order_by(Transaction.created_at.desc()).limit(5)
@@ -825,7 +798,6 @@ async def process_deposit(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer()
         return
     
-    # Обрабатываем фиксированные суммы
     amounts = {
         "deposit_100": 100,
         "deposit_500": 500,
@@ -847,7 +819,6 @@ async def process_deposit_payment(callback: types.CallbackQuery, amount: float):
         user.balance += amount
         user.total_deposited += amount
         
-        # Записываем транзакцию
         trx = Transaction(
             user_id=user_id,
             amount=amount,
@@ -880,7 +851,6 @@ async def process_custom_deposit(message: types.Message, state: FSMContext):
             await message.answer("❌ Максимальная сумма пополнения: 50000 RUB")
             return
         
-        # Процесс пополнения
         async with async_session() as session:
             user = (await session.execute(select(User).where(User.user_id == message.from_user.id))).scalar_one()
             user.balance += amount
@@ -925,7 +895,6 @@ async def process_promo_code(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
     
     async with async_session() as session:
-        # Ищем промокод
         promo = (await session.execute(
             select(PromoCode).where(
                 PromoCode.code == promo_code,
@@ -939,7 +908,6 @@ async def process_promo_code(message: types.Message, state: FSMContext):
             await state.clear()
             return
         
-        # Активируем промокод
         user = (await session.execute(select(User).where(User.user_id == user_id))).scalar_one()
         user.balance += promo.amount
         
@@ -947,7 +915,6 @@ async def process_promo_code(message: types.Message, state: FSMContext):
         promo.activated_by = user_id
         promo.activated_at = datetime.utcnow()
         
-        # Записываем транзакцию
         trx = Transaction(
             user_id=user_id,
             amount=promo.amount,
@@ -972,7 +939,6 @@ async def wallet_history(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     
     async with async_session() as session:
-        # Получаем последние 10 транзакций
         trans = (await session.execute(
             select(Transaction).where(Transaction.user_id == user_id)
             .order_by(Transaction.created_at.desc()).limit(10)
@@ -1160,13 +1126,12 @@ async def show_chats(message: types.Message):
             f"━━━━━━━━━━━━━━━━━━━━\n"
             f"Всего чатов: {count}\n"
             f"Активных (вошли): {active_count}\n\n"
-            f"💰 *Награда за добавление:* 5 руб/чат, 10 руб/папка."
+            f"💰 *Награда за добавление: {CONFIG['REWARD_PUBLIC']} руб/чат, {CONFIG['REWARD_ADDLIST']} руб/папка.*"
         )
         await message.answer(text, reply_markup=get_chat_actions_kb(), parse_mode="Markdown")
 
 @router.callback_query(F.data == "chat_add_folder")
 async def ask_addlist_link(callback: types.CallbackQuery, state: FSMContext):
-    # Проверяем доступность функционала папок
     if not CHATLISTS_AVAILABLE:
         await callback.message.edit_text(
             "❌ **ФУНКЦИОНАЛ ПАПОК НЕДОСТУПЕН**\n"
@@ -1195,7 +1160,6 @@ async def ask_addlist_link(callback: types.CallbackQuery, state: FSMContext):
 
 @router.message(BotStates.add_addlist)
 async def process_addlist_link(message: types.Message, state: FSMContext):
-    # Проверяем доступность функционала папок
     if not CHATLISTS_AVAILABLE:
         await message.answer(
             "❌ **ФУНКЦИОНАЛ ПАПОК НЕДОСТУПЕН**\n"
@@ -1384,7 +1348,6 @@ async def process_chat_text(message: types.Message, state: FSMContext):
     
     if addlist_links and CHATLISTS_AVAILABLE:
         await message.answer(f"📁 Найдено {len(addlist_links)} папок. Обрабатываю первую папку...")
-        # Сохраняем первую ссылку на папку
         await state.update_data(addlist_link=addlist_links[0])
         await process_addlist_link(message, state)
     elif addlist_links and not CHATLISTS_AVAILABLE:
@@ -1532,7 +1495,7 @@ async def start_broadcast_wizard(message: types.Message, state: FSMContext):
         await message.answer(
             "📝 **СОЗДАНИЕ РАССЫЛКИ**\n"
             "━━━━━━━━━━━━━━━━━━━━\n"
-            "💎 *Стоимость одной рассылки: 100 RUB*\n\n"
+            f"💎 *Стоимость одной рассылки: {CONFIG['BROADCAST_COST']} RUB*\n\n"
             "*Важно:* Рассылка будет выполнена по ВСЕМ чатам на каждом аккаунте,\n"
             "независимо от того, есть они в базе данных или нет.\n\n"
             "✍️ **Введите текст вашего сообщения:**\n"
@@ -1574,7 +1537,7 @@ async def broadcast_start(callback: types.CallbackQuery, state: FSMContext):
     text = data.get('text')
     
     if not text:
-        await callback.answer("❌ Текст сообения не найден")
+        await callback.answer("❌ Текст сообщения не найден")
         return
     
     await callback.message.edit_text(
@@ -1785,13 +1748,11 @@ async def admin_stats(message: types.Message):
             await message.answer("❌ У вас нет доступа к админ-панели.")
             return
         
-        # Общая статистика
         u_cnt = (await session.execute(select(func.count(User.id)))).scalar()
         s_cnt = (await session.execute(select(func.count(Session.id)))).scalar()
         c_cnt = (await session.execute(select(func.count(Chat.id)))).scalar()
         b_cnt = (await session.execute(select(func.count(Broadcast.id)))).scalar()
         
-        # Статистика по доходам
         total_deposits = (await session.execute(
             select(func.sum(Transaction.amount)).where(Transaction.type == "deposit")
         )).scalar() or 0
@@ -1800,7 +1761,6 @@ async def admin_stats(message: types.Message):
             select(func.sum(Transaction.amount)).where(Transaction.type == "broadcast")
         )).scalar() or 0
         
-        # Активные пользователи за последние 7 дней
         week_ago = datetime.utcnow() - timedelta(days=7)
         active_users = (await session.execute(
             select(func.count(User.id)).where(User.reg_date >= week_ago)
@@ -1847,7 +1807,6 @@ async def admin_users(message: types.Message):
 @router.callback_query(F.data == "admin_users_view")
 async def admin_users_view(callback: types.CallbackQuery):
     async with async_session() as session:
-        # Получаем последних 10 пользователей
         users = (await session.execute(
             select(User).order_by(User.reg_date.desc()).limit(10)
         )).scalars().all()
@@ -1899,7 +1858,6 @@ async def process_admin_add_balance(message: types.Message, state: FSMContext):
             return
         
         async with async_session() as session:
-            # Проверяем существование пользователя
             user = (await session.execute(
                 select(User).where(User.user_id == user_id_to)
             )).scalar_one_or_none()
@@ -1908,10 +1866,8 @@ async def process_admin_add_balance(message: types.Message, state: FSMContext):
                 await message.answer(f"❌ Пользователь с ID {user_id_to} не найден")
                 return
             
-            # Изменяем баланс
             user.balance += amount
             
-            # Записываем транзакцию
             trx = Transaction(
                 user_id=user_id_to,
                 amount=amount,
@@ -1988,7 +1944,6 @@ async def process_admin_create_promo(message: types.Message, state: FSMContext):
             return
         
         async with async_session() as session:
-            # Проверяем существование промокода
             existing = (await session.execute(
                 select(PromoCode).where(PromoCode.code == code)
             )).scalar_one_or_none()
@@ -1997,7 +1952,6 @@ async def process_admin_create_promo(message: types.Message, state: FSMContext):
                 await message.answer(f"❌ Промокод {code} уже существует")
                 return
             
-            # Создаем промокод
             promo = PromoCode(
                 code=code,
                 amount=amount,
@@ -2026,7 +1980,6 @@ async def process_admin_create_promo(message: types.Message, state: FSMContext):
 @router.callback_query(F.data == "admin_promo_list")
 async def admin_promo_list(callback: types.CallbackQuery):
     async with async_session() as session:
-        # Получаем все промокоды
         promos = (await session.execute(
             select(PromoCode).order_by(PromoCode.created_at.desc()).limit(20)
         )).scalars().all()
@@ -2087,7 +2040,6 @@ async def process_admin_broadcast(message: types.Message, state: FSMContext):
     await message.answer("🔄 Начинаю рассылку всем пользователям...")
     
     async with async_session() as session:
-        # Получаем всех пользователей
         users = (await session.execute(select(User))).scalars().all()
         
         total = len(users)
@@ -2096,7 +2048,6 @@ async def process_admin_broadcast(message: types.Message, state: FSMContext):
         
         for user in users:
             try:
-                # Пропускаем себя
                 if user.user_id == admin_id:
                     continue
                 
@@ -2106,7 +2057,6 @@ async def process_admin_broadcast(message: types.Message, state: FSMContext):
                 )
                 success += 1
                 
-                # Задержка между отправками
                 await asyncio.sleep(0.1)
                 
             except Exception as e:
@@ -2136,7 +2086,6 @@ async def admin_balance_management(message: types.Message):
             await message.answer("❌ У вас нет доступа к админ-панели.")
             return
     
-    # Получаем топ пользователей по балансу
     async with async_session() as session:
         top_users = (await session.execute(
             select(User).order_by(User.balance.desc()).limit(10)
@@ -2211,7 +2160,6 @@ async def show_info(message: types.Message):
 # Обработка других callback-запросов
 @router.callback_query()
 async def handle_all_callbacks(callback: types.CallbackQuery):
-    # Обработка всех callback-запросов
     await callback.answer("Команда обработана")
 
 # --- ЗАПУСК ---
@@ -2219,7 +2167,6 @@ async def handle_all_callbacks(callback: types.CallbackQuery):
 async def main():
     await init_db()
     
-    # Проверяем токен перед запуском
     try:
         me = await bot.get_me()
         print(f"✅ Бот авторизован: @{me.username} (ID: {me.id})")
@@ -2235,7 +2182,6 @@ async def main():
         print("="*50 + "\n")
         return
 
-    # Убираем старые webhook если были
     try:
         await bot.delete_webhook(drop_pending_updates=True)
     except Exception as e:
@@ -2249,6 +2195,7 @@ async def main():
     print("   • Подтверждение рассылок")
     print("   • Баннер приветствия")
     print(f"   • Папки: {'✅ Доступны' if CHATLISTS_AVAILABLE else '❌ Недоступны'}")
+    
     try:
         await dp.start_polling(bot, skip_updates=True)
     except Exception as e:
@@ -2264,4 +2211,3 @@ if __name__ == "__main__":
         print("\n👋 Бот остановлен.")
     except Exception as e:
         logger.error(f"Fatal error: {e}\n{traceback.format_exc()}")
-
